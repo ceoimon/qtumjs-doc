@@ -1,5 +1,5 @@
 ---
-title: QtumJS API Reference
+title: QtumJS-Eth API Reference
 
 language_tabs:
   - typescript
@@ -10,83 +10,49 @@ search: true
 
 # Introduction
 
-> To install qtumjs
+> To install qtumjs-eth
 
 ```
-npm install qtumjs
+npm install qtumjs-eth
 ```
 
-QtumJS is a JavaScript library for developing DApp on the Qtum blockchain. You can use this library to develop frontend UI that runs in the browser, as well as backend server scripts that run in NodeJS.
+QtumJS-Eth is a JavaScript library for developing DApp on the Ethereum blockchain. You can use this library to develop frontend UI that runs in the browser, as well as backend server scripts that run in NodeJS.
 
 The main classes are:
 
 Class | Description
 --------- | -----------
-QtumRPCRaw | Direct access to `qtumd`'s blockchain RPC service, using JSONRPC 1.0 calling convention.
-QtumRPC | Wrapper for `QtumRPCRaw`, to provide interface like JSONRPC 2.0.
-Contract | An abstraction for interacting with smart contracts. Handles [ABI encoding/decoding](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI).
+RPCRaw | Direct access to blockchain RPC service.
+[EthRPC](#ethrpc) | Wrapper for `RPCRaw`, to provide some [Ethereum JSON RPC API](https://github.com/ethereum/wiki/wiki/JSON-RPC) wrapper.
+[Contract](#contract) | An abstraction for interacting with smart contracts. Handles [ABI encoding/decoding](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI).
 
-QtumJS is developed using [TypeScript](https://www.typescriptlang.org/), and as such, comes with robust type definitions for all the APIs. We recommend using [VSCode](https://code.visualstudio.com/) to take advantage of language support, such as type hinting and autocompletion.
+QtumJS-Eth is developed using [TypeScript](https://www.typescriptlang.org/), and as such, comes with robust type definitions for all the APIs. We recommend using [VSCode](https://code.visualstudio.com/) to take advantage of language support, such as type hinting and autocompletion.
 
 But you can also choose to use plain JavaScript and notepad if you prefer.
 
-This document is the reference for QtumJS API, and its basic uses. For a tutorial-style introduction to QtumJS, see: [QtumBook - ERC20 With QtumJS](https://github.com/qtumproject/qtumbook/blob/master/part2/erc20-js.md).
-
-
-## Running Qtum RPC
-
-> To run qtumd in development mode.
-
-```
-docker run -it --rm \
-  --name myapp \
-  -v `pwd`:/dapp \
-  -p 3889:3889 \
-  hayeah/qtumportal
-```
-
-> To run qtumd for the test network (testnet):
-
-```
-docker run -it --rm \
-  --name myapp \
-  -e "QTUM_NETWORK=testnet" \
-  -v `pwd`:/dapp \
-  -p 3889:3889 \
-  hayeah/qtumportal
-```
-
-
-QtumJS relies on `qtumd` to provide the JSON-RPC service for accessing the QTUM blockchain.
-
-For more details, see: [QtumBook - Running QTUM](https://github.com/qtumproject/qtumbook/blob/master/SUMMARY.md#part-1---running-qtum).
-
-
-<aside class="notice">
-The default JSON-RPC credential is "qtum:test", running on port 3889
-</aside>
+This document is the reference for QtumJS-Eth API, and its basic uses. 
 
 # ERC20 Example
 
 ```ts
 import {
-  Qtum,
-} from "qtumjs"
+  Ethereum,
+} from "qtumjs-eth"
 
 const repoData = require("./solar.json")
-const qtum = new Qtum("http://qtum:test@localhost:3889", repoData)
+const ethereum = new Ethereum("http://localhost:8545", repoData)
 
-const myToken = qtum.contract("zeppelin-solidity/contracts/token/CappedToken.sol")
+const myToken = ethereum.contract("CappedToken")
 
 async function transfer(fromAddr, toAddr, amount) {
   const tx = await myToken.send("transfer", [toAddr, amount], {
-    senderAddress: fromAddr,
+    from: fromAddr
   })
 
   console.log("transfer tx:", tx.txid)
   console.log(tx)
 
-  await tx.confirm(3)
+  await tx.confirm(3) 
   console.log("transfer confirmed")
 }
 ```
@@ -94,46 +60,46 @@ async function transfer(fromAddr, toAddr, amount) {
 Assuming that `solar.json` contains information about your deployed contracts,
 you can use qtumjs to call the token contract's method to transfer tokens.
 
-An example [solar.json](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli/blob/29fab6dfcca55013c7efa8ee5e91bbc8c40ca55a/solar.development.json.example). This can be generated automatically using the [solar](https://github.com/qtumproject/solar) deployment tool.
+An example [solar.json](https://github.com/ceoimon/qtumbook-mytoken-qtumjs-eth-cli/blob/master/solar.development.json.example). This can be generated automatically using the [solar](https://github.com/qtumproject/solar) deployment tool.
 
-The complete example: [qtumproject/qtumbook-mytoken-qtumjs-cli](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli)
+The complete example: [ceoimon/qtumbook-mytoken-qtumjs-eth-cli](https://github.com/ceoimon/qtumbook-mytoken-qtumjs-eth-cli)
 
 For contract deployment, see [Solar Smart Contract Deployment Tool](https://github.com/qtumproject/solar).
 
-For fleshed out tutorial, see [QtumBook - ERC20 With QtumJS](https://github.com/qtumproject/qtumbook/blob/master/part2/erc20-js.md).
-
-# Qtum
+# Ethereum
 
 ```ts
 const repoData = require("./solar.json")
-const qtum = new Qtum("http://qtum:test@localhost:3889", repoData)
+const ethereum = new Ethereum("http://localhost:8545", repoData, '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1')
 ```
 
-The `Qtum` class is an instance of the `qtumjs` API. It provides two main features:
+The `Ethereum` class is an instance of the `qtumjs-eth` API. It provides two main features:
 
-+ Access to the `qtumd` RPC service. It is a subclass of [QtumRPC](#qtumrpc).
++ Access to the RPC service. It is a subclass of [EthRPC](#ethrpc).
 + A factory method to instantiate [Contract](#contract-2) instances, for interacting with deployed contracts.
 
 Arg | Type
 --------- | -----------
 url | string
-  | URL of the qtumd RPC service
+  | URL of the RPC service
 repoData | [IContractsRepoData](#icontractsrepodata)
   | Information about Solidity contracts.
+sender | string
+  | *optional* Default ETH sender (default: `$first_account_of_eth_node`)
 
 The `repoData` contains the ABI definitions of all the deployed contracts and libraries, as well as deploy addresses. This information is used to instantiate `Contract` instances.
 
-`Contract` instantiated with `Qtum`'s factory method is able to decode all event types found in `repoData`. Whereas a `Contract` constructed manually is only able to decode event types defined in its scope, a limitation due to how the Solidity compiler output ABI definitions.
+`Contract` instantiated with `Ethereum`'s factory method is able to decode all event types found in `repoData`. Whereas a `Contract` constructed manually is only able to decode event types defined in its scope, a limitation due to how the Solidity compiler output ABI definitions.
 
-It is recommended that you use Qtum to instantiate `Contract` instances.
+It is recommended that you use `Ethereum` to instantiate `Contract` instances.
 
 ## contract
 
 ```ts
-const myToken = qtum.contract("zeppelin-solidity/contracts/token/CappedToken.sol")
+const myToken = ethereum.contract("CappedToken")
 ```
 
-> This instantiates the Contract using information [here](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli/blob/29fab6dfcca55013c7efa8ee5e91bbc8c40ca55a/solar.development.json.example#L3).
+> This instantiates the Contract using information [here](https://github.com/ceoimon/qtumbook-mytoken-qtumjs-eth-cli/blob/master/solar.development.json.example#L3).
 
 A factory method to instantiate a `Contract` instance using the ABI definitions and address found in `repoData`. The Contract instance is configured with an event log decoder that can decode all known event types found in `repoData`.
 
@@ -141,16 +107,14 @@ Arg | Type
 --------- | -----------
 name | string
   | Used as key into the `repoData.contracts` map to get contract information.
-
-## rawCall
-
-Inherited from [QtumRPC#rawcall](#rawcall-2)
+@return | [Contract](#contract)
+  | The Contract instance corresponding to the specific key.
 
 # Contract
 
 A class abstraction for interacting with a Smart Contract.
 
-This is a more convenient API than using `QtumRPC` to directly call the RPC's `sendcontract` and `calltocontract` methods. It handles ABI encoding, to convert between JS and Solidity values.
+This is a more convenient API than using `EthRPC` to directly call the RPC's `sendcontract` and `calltocontract` methods. It handles ABI encoding, to convert between JS and Solidity values.
 
 * API for confirming transactions.
 * API for invoking contract's methods using `call` or `send` .
@@ -159,21 +123,19 @@ This is a more convenient API than using `QtumRPC` to directly call the RPC's `s
 ## constructor
 
 ```js
-const rpc = new QtumRPC("http://qtum:test@localhost:3889")
+const rpc = new EthRPC("http://localhost:8545")
 
-const myToken = new Contract(rpc, repo.contracts[
-  "zeppelin-solidity/contracts/token/CappedToken.sol"
-])
+const myToken = new Contract(rpc, repo.contracts.CappedToken)
 ```
 
-> The contract [info](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli/blob/29fab6dfcca55013c7efa8ee5e91bbc8c40ca55a/solar.development.json.example#L3) may be generated by [solar](https://github.com/qtumproject/solar).
+> The contract [info](https://github.com/ceoimon/qtumbook-mytoken-qtumjs-eth-cli/blob/master/solar.development.json.example#L3) may be generated by [solar](https://github.com/qtumproject/solar).
 
 Arg | Type | Description
 --------- | ----------- | -----------
-rpc | QtumRPC | The RPC instance used to interact with the contract.
+rpc | EthRPC | The RPC instance used to interact with the contract.
 info | [IContractInfo](#icontractinfo) | Information for the deployed contract
 
-It is recommended that you use [Qtum#contract](#contract) instead of this constructor.
+It is recommended that you use [Ethereum#contract](#contract) instead of this constructor.
 
 ## call
 
@@ -182,112 +144,24 @@ async function totalSupply() {
   const result = await myToken.call("totalSupply")
 
   // supply is a BigNumber instance (see: bn.js)
-  const supply = result.outputs[0]
+  const supply = result[0]
 
   console.log("supply", supply.toNumber())
 }
 ```
 
-> Example output:
-
-```js
-{ address: 'a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3',
-  executionResult:
-   { gasUsed: 21689,
-     excepted: 'None',
-     newAddress: 'a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3',
-     output: '00000000000000000000000000000000000000000000000000000000000036b0',
-     codeDeposit: 0,
-     gasRefunded: 0,
-     depositSize: 0,
-     gasForDeposit: 0 },
-  transactionReceipt:
-   { stateRoot: '5a0d9cd5df18165c75755f4345ca81da94f9247c1c031171fd6e2ce1a368844c',
-     gasUsed: 21689,
-     bloom: '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000000000000000000000000000000000000000000',
-     log: [] },
-  outputs: [ <BN: 36b0> ] }
-```
-
-> A simulated "mint" call:
-
-```ts
-const result = await myToken.call("mint", ["dcd32b87270aeb980333213da2549c9907e09e94", 1000])
-```
-
-> Result:
-
-```json
-{
-  "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "executionResult": {
-    "gasUsed": 39306,
-    "excepted": "None",
-    "newAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-    "output": "0000000000000000000000000000000000000000000000000000000000000001",
-    "codeDeposit": 0,
-    "gasRefunded": 0,
-    "depositSize": 0,
-    "gasForDeposit": 0
-  },
-  "transactionReceipt": {
-    "stateRoot": "9922edb770bd700a212427d3bc0764a9fed953a987952b2619b8a78dac7498aa",
-    "gasUsed": 39306,
-    "bloom": "00000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000020000000000008000000000000000000000000000000000000000000000000020000000020000000000800000000000000400000000010000000000000000000000000000000000000000000000000000000000000000000000000000080000000080000000000000000000000000000000000000000000000000000000002010000000000000000000000000000000200000000000000000020000000000000000000000000000000000000000000000000020000000000000000",
-    "log": [
-      {
-        "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-        "topics": [
-          "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-          "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-        ],
-        "data": "00000000000000000000000000000000000000000000000000000000000003e8"
-      },
-      {
-        "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-        "topics": [
-          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0000000000000000000000000000000000000000000000000000000000000000",
-          "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-        ],
-        "data": "00000000000000000000000000000000000000000000000000000000000003e8"
-      }
-    ]
-  },
-  "outputs": [
-    true
-  ],
-  "logs": [
-    {
-      "type": "Mint",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "amount": "3e8"
-    },
-    {
-      "type": "Transfer",
-      "from": "0000000000000000000000000000000000000000",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "value": "3e8"
-    }
-  ]
-}
-```
-
-Executes contract method on your own local qtumd node as a "simulation" using `callcontract`. It is free, and does not actually modify the blockchain.
-
-This is free.
+Executes contract method on your own local testrpc node as a "simulation" using `callcontract`. It is free, and does not actually modify the blockchain.
 
 Arg | Type
 --------- | -----------
 method | string
   | Name of the contract method.
-args | Array\<any>
+args | any[]
   | Arguments for calling the method
-opts | IContractCallRequestOptions
-  | call options
-@return | Promise\<[IContractCallResult](#icontractcallresult)>
-  | call result, with ABI decoded outputs
+opts | [IContractCallRequestOptions](#icontractcallrequestoptions)
+  | *optional* call options
+@return | Promise\<any[]>
+  | call result, ABI decoded
 
 ## send
 
@@ -296,41 +170,35 @@ async function mint(toAddr, amount) {
   // Submit a `sendtocontract` transaction, invoking the `mint` method.
   const tx = await myToken.send("mint", [toAddr, amount])
 
-  console.log("tx:", tx)
+  console.log("tx:\n", tx)
 
   // Wait for 3 confirmations. The callback receives the
   // updated transaction info for each additional confirmation.
   //
   // Both arguments are optional. `await tx.confirm()` would do.
   const receipt = await tx.confirm(3, (updatedTx) => {
-    console.log("new confirmation", updatedTx.txid, updatedTx.confirmations)
+    console.log("new confirmation", updatedTx.txid)
   })
-  console.log("tx receipt:", JSON.stringify(receipt, null, 2))
+  console.log("tx receipt:\n", JSON.stringify(receipt, null, 2))
 }
 ```
 
 > Example output:
 
-```
-mint tx: 858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9
-{ amount: 0,
-  fee: -0.081064,
-  confirmations: 0,
-  trusted: true,
-  txid: '858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9',
-  walletconflicts: [],
-  time: 1515475961,
-  timereceived: 1515475961,
-  'bip125-replaceable': 'no',
-  details:
-   [ { account: '',
-       category: 'send',
-       amount: 0,
-       vout: 0,
-       fee: -0.081064,
-       abandoned: false } ],
-  hex: '0200000001006a977de70014fdc2546ed19a531326086c6c9631cb1c5352db5f09e147736b0100000049483045022100b4ca32770a9f42679c6d20b7ddb5feb160303fceafc2db0fedba18a22f0b643602203c2568eb689fd324e76a12f367552fe4cce36b29f8174738209f881959aadbab01feffffff02000000000000000063010403400d0301284440c10f19000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94000000
-00000000000000000000000000000000000000000000000000000003e814a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3c2601e72902e0000001976a914dcd32b87270aeb980333213da2549c9907e09e9488ac212e0000',
+```js
+tx:
+{ hash: '0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e',
+  nonce: '0x01',
+  blockHash: '0x4a591600314e15fc01911c4d04500ec262b65342774dcef088c10eadc52dc981',
+  blockNumber: '0x02',
+  transactionIndex: '0x0',
+  from: '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1',
+  to: '0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab',
+  value: '0x0',
+  gas: '0x030d40',
+  gasPrice: '0x04a817c800',
+  input: '0x40c10f19000000000000000000000000a9639ccae212729afce8717099020a8d07a9d87f00000000000000000000000000000000000000000000000000000000000003e8',
+  txid: '0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e',
   method: 'mint',
   confirm: [Function: confirm] }
 ```
@@ -338,55 +206,71 @@ mint tx: 858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9
 > The callback would print 3 times, for each confirmation:
 
 ```
-new confirmation 858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9 1
-new confirmation 858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9 2
-new confirmation 858347704258506012f538b19b9702d636dc350bc25a7e60d404bf3d2c08efd9 3
+new confirmation 0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e
+new confirmation 0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e
+new confirmation 0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e
 ```
 
 > The returned transaction receipt after confirmation:
 
 ```json
-
+tx receipt:
 {
-  "blockHash": "3b53ad132c26f9c30e5be9f664573428dad8b52e167becea4428d6903cb32740",
-  "blockNumber": 13917,
-  "transactionHash": "79338589bb75e1865be889142890a4e25d3b9dbd454ce3f3c2614587c85e2ed3",
-  "transactionIndex": 1,
-  "from": "dcd32b87270aeb980333213da2549c9907e09e94",
-  "to": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "cumulativeGasUsed": 39306,
-  "gasUsed": 39306,
-  "contractAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
+  "transactionHash": "0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e",
+  "transactionIndex": "0x0",
+  "blockHash": "0x4a591600314e15fc01911c4d04500ec262b65342774dcef088c10eadc52dc981",
+  "blockNumber": "0x2",
+  "gasUsed": "0x10c1c",
+  "cumulativeGasUsed": "0x10c1c",
+  "contractAddress": null,
+  "status": "0x1",
+  "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000020000000000008000000000000000000000000000000000000000000000000020000000000000000000800000000002000400000000010100000000000000000000000001000000000000000000000000000000000100000000000000080000000000000000000000000000000400000000000000000000000000000000002000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000",
+  "from": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+  "to": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
   "logs": [
     {
-      "type": "Mint",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "amount": "7d0"
+      "0": "3e8",
+      "amount": "3e8",
+      "to": "0xa9639ccae212729afce8717099020a8d07a9d87f",
+      "_eventName": "Mint"
     },
     {
-      "type": "Transfer",
-      "from": "0000000000000000000000000000000000000000",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "value": "7d0"
+      "0": "3e8",
+      "value": "3e8",
+      "from": "0x0000000000000000000000000000000000000000",
+      "to": "0xa9639ccae212729afce8717099020a8d07a9d87f",
+      "_eventName": "Transfer"
     }
   ],
   "rawlogs": [
     {
-      "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
+      "logIndex": "0x0",
+      "transactionIndex": "0x0",
+      "transactionHash": "0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e",
+      "blockHash": "0x4a591600314e15fc01911c4d04500ec262b65342774dcef088c10eadc52dc981",
+      "blockNumber": "0x2",
+      "address": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+      "data": "0x00000000000000000000000000000000000000000000000000000000000003e8",
       "topics": [
-        "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
+        "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
+        "0x000000000000000000000000a9639ccae212729afce8717099020a8d07a9d87f"
       ],
-      "data": "00000000000000000000000000000000000000000000000000000000000007d0"
+      "type": "mined"
     },
     {
-      "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
+      "logIndex": "0x1",
+      "transactionIndex": "0x0",
+      "transactionHash": "0xc215218a28d0b9ff83e5b8d0d75078e1d25afb32363b6c6b2beb44b009940d4e",
+      "blockHash": "0x4a591600314e15fc01911c4d04500ec262b65342774dcef088c10eadc52dc981",
+      "blockNumber": "0x2",
+      "address": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+      "data": "0x00000000000000000000000000000000000000000000000000000000000003e8",
       "topics": [
-        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x000000000000000000000000a9639ccae212729afce8717099020a8d07a9d87f"
       ],
-      "data": "00000000000000000000000000000000000000000000000000000000000007d0"
+      "type": "mined"
     }
   ]
 }
@@ -401,13 +285,13 @@ There are two asynchronous steps to a transaction:
 1. You submit the the transaction to the network.
 2. Once submitted, wait for a required number of confirmations.
 
-After successful confirmation, the transaction receipt ([IContractSendReceipt](#icontractsendreceipt)) with ABI decoded event logs is returned.
+After successful confirmation, the transaction receipt ([ITransactionReceipt](#itransactionreceipt)) with ABI decoded event logs is returned.
 
 Arg | Type
 --------- | -----------
 method | string
   | Name of the contract method.
-args | Array\<any>
+args | any[]
   | Arguments for calling the method
 opts | [IContractSendRequestOptions](#icontractsendrequestoptions)
   | *optional* send options
@@ -441,14 +325,13 @@ contract.call("foo(uint256,uint256)", [1, 2])
 contract.call("foo(int256,int256)", [1, 2])
 ```
 
-## logs
+## getlogs
 
 ```js
 async function getLogs(fromBlock=0, toBlock="latest") {
-  const logs = await myToken.logs({
+  const logs = await myToken.getlogs({
     fromBlock,
-    toBlock,
-    minconf: 1,
+    toBlock
   })
 
   console.log(JSON.stringify(logs, null, 2))
@@ -457,89 +340,105 @@ async function getLogs(fromBlock=0, toBlock="latest") {
 
 > Example Output
 
-```js
-{
-  "entries": [
-    {
-      "blockHash": "369c6ded05c27ae7efc97964cce083b0ea9b8b950e67c51e52cb1bf898b9c415",
-      "blockNumber": 12184,
-      "transactionHash": "d1638a53f38fd68c5763e2eef9d86b9fc6ee7ea3f018dae7b1e385b4a9a78bc7",
-      "transactionIndex": 2,
-      "from": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "to": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "cumulativeGasUsed": 39306,
-      "gasUsed": 39306,
-      "contractAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "topics": [
-        "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-      ],
-      "data": "00000000000000000000000000000000000000000000000000000000000003e8",
-      "event": {
-        "type": "Mint",
-        "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-        "amount": "3e8"
-      }
-    },
-    {
-      "blockHash": "369c6ded05c27ae7efc97964cce083b0ea9b8b950e67c51e52cb1bf898b9c415",
-      "blockNumber": 12184,
-      "transactionHash": "d1638a53f38fd68c5763e2eef9d86b9fc6ee7ea3f018dae7b1e385b4a9a78bc7",
-      "transactionIndex": 2,
-      "from": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "to": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "cumulativeGasUsed": 39306,
-      "gasUsed": 39306,
-      "contractAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "topics": [
-        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-      ],
-      "data": "00000000000000000000000000000000000000000000000000000000000003e8",
-      "event": {
-        "type": "Transfer",
-        "from": "0000000000000000000000000000000000000000",
-        "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-        "value": "3e8"
-      }
+```json
+[
+  {
+    "logIndex": "0x00",
+    "transactionIndex": "0x00",
+    "transactionHash": "0xd7f0ba07750626ffd82fa8ad909e2657bc3b181a7896e69212c55f8f83ae89f7",
+    "blockHash": "0xdf328377bbbe15edb59928bb0507a9f7e252e973bcd75decd579e94ee6d9e4af",
+    "blockNumber": "0x02",
+    "address": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+    "data": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+    "topics": [
+      "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
+      "0x00000000000000000000000090f8bf6a479f320ead074411a4b0e7944ea8c9c1"
+    ],
+    "type": "mined",
+    "event": {
+      "0": "3e8",
+      "amount": "3e8",
+      "to": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+      "_eventName": "Mint"
     }
-  ],
-  "count": 2,
-  "nextblock": 12185
-}
+  },
+  {
+    "logIndex": "0x01",
+    "transactionIndex": "0x00",
+    "transactionHash": "0xd7f0ba07750626ffd82fa8ad909e2657bc3b181a7896e69212c55f8f83ae89f7",
+    "blockHash": "0xdf328377bbbe15edb59928bb0507a9f7e252e973bcd75decd579e94ee6d9e4af",
+    "blockNumber": "0x02",
+    "address": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+    "data": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+    "topics": [
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x00000000000000000000000090f8bf6a479f320ead074411a4b0e7944ea8c9c1"
+    ],
+    "type": "mined",
+    "event": {
+      "0": "3e8",
+      "value": "3e8",
+      "from": "0x0000000000000000000000000000000000000000",
+      "to": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+      "_eventName": "Transfer"
+    }
+  },
+  {
+    "logIndex": "0x00",
+    "transactionIndex": "0x00",
+    "transactionHash": "0x0e96facc85351227e5fc68c3688713dd6fe6385a7cac4a63cb6c0f9ca5be0a92",
+    "blockHash": "0xabc83d54866df78b9014048df29589ed6d3ab36ea851594dca79b88b67ecb1b2",
+    "blockNumber": "0x03",
+    "address": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+    "data": "0x0000000000000000000000000000000000000000000000000000000000000064",
+    "topics": [
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "0x00000000000000000000000090f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+      "0x000000000000000000000000ffcf8fdee72ac11b5c542428b35eef5769c409f0"
+    ],
+    "type": "mined",
+    "event": {
+      "0": "64",
+      "value": "64",
+      "from": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+      "to": "0xffcf8fdee72ac11b5c542428b35eef5769c409f0",
+      "_eventName": "Transfer"
+    }
+  }
+]
 ```
 
 Get [Solidity event logs](http://solidity.readthedocs.io/en/develop/abi-spec.html#events) generated by the contract.
 
 The options can limit events log query to a block number range by specifying `fromBlock` and `toBlock`. For example, you could query for event logs between block 1000 to 1500.
 
-Moreover, you can use `minconf` to specify the minimum number of confirmations before an event log would be returned in the result.
-
-
 Arg | Type
 --------- | -----------
-opts | [IRPCWaitForLogsRequest](#irpcwaitforlogsrequest)
-  | Event logs query parameters
-@return | Promise\<[IContractEventLogs](#icontracteventlogs)>
+opts | [IGetLogsRequest](#igetlogsrequest)
+  | *optional* Event logs query parameters
+@return | Promise\<[IContractEventLog](#icontracteventlog)[]>
   | Log query result, with ABI decoded outputs
 
-## onLogs
+## onLog
 
 ```js
 myToken.onLog((entry) => {
-    console.log(entry)
-}, { minconf: 1 })
+  console.log(entry)
+})
 ```
 
 Subscribe to contract's new events. The callback is invoked each time a new event is received. By default, `onLog` start listening for logs from the tip of the blockchain. Use `fromBlock` to also receive older events.
 
+Note: it will include the latest block's logs if `fromBlock` is not specified or set to `latest`.
 
 Arg | Type
 --------- | -----------
 callback | (entry: [IContractEventLog](#icontracteventlog)) => void
-opts | [IRPCWaitForLogsRequest](#irpcwaitforlogsrequest)
-  | Event logs query parameters
+opts | [IGetLogsRequest](#igetlogsrequest)
+  | *optional* Event logs query parameters
+@return | () => void
+  | cancel the listener
 
 ## logEmitter
 
@@ -567,49 +466,16 @@ Events that lack ABI definitions (thus cannot be parsed) are emitted as "?".
 
 Arg | Type
 --------- | -----------
-opts | [IRPCWaitForLogsRequest](#irpcwaitforlogsrequest)
-  | Event logs query parameters
+opts | [IGetLogsRequest](#igetlogsrequest)
+  | *optional* Event logs query parameters
 
 ## receipt
 
 ```ts
-const txid = "62fecfd27d71ddb260ac48c73c8f0f87e96d0b3a598ed2c2251caa4e6f9a9d97"
+const txid = "0xd7f0ba07750626ffd82fa8ad909e2657bc3b181a7896e6"
 const receipt = await qrcToken.receipt(txid)
-console.log(JSON.stringify(receipt, null, 2))
-```
-
-> Example output
-
-```js
-{
-  "blockHash": "af37cb8d9905521542243005fadc9f18c1498c9823e35fa277ea1c37174c289a",
-  "blockNumber": 83981,
-  "transactionHash": "62fecfd27d71ddb260ac48c73c8f0f87e96d0b3a598ed2c2251caa4e6f9a9d97",
-  "transactionIndex": 28,
-  "from": "57142e3bcf000f28890b5d979afc7ea90204e1de",
-  "to": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-  "cumulativeGasUsed": 37029,
-  "gasUsed": 37029,
-  "contractAddress": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-  "logs": [
-    {
-      "type": "Transfer",
-      "from": "57142e3bcf000f28890b5d979afc7ea90204e1de",
-      "to": "c0ed80283c53c300c31c2bda6eca841e53cb6a21",
-      "value": "1ba5add5700"
-    }
-  ],
-  "rawlogs": [
-    {
-      "address": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-      "topics": [
-        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "00000000000000000000000057142e3bcf000f28890b5d979afc7ea90204e1de",
-        "000000000000000000000000c0ed80283c53c300c31c2bda6eca841e53cb6a21"
-      ],
-      "data": "000000000000000000000000000000000000000000000000000001ba5add5700"
-    }
-  ]
+if (receipt) {
+  console.log(JSON.stringify(receipt, null, 2))
 }
 ```
 
@@ -621,60 +487,36 @@ Arg | Type
 --------- | -----------
 txid | string
   | Transaction ID
-@return | Promise\<[IContractSendReceipt](#icontractsendreceipt)>
-  | Transaction receipt, with event logs.
+@return | Promise\<[ITransactionReceipt](#itransactionreceipt) &#124; `null`>
+  | Transaction receipt, with event logs. return `null` if transaction is not yet confirmed.
 
-# QtumRPC
+# EthRPC
 
 ```ts
-const rpc = new QtumRPC('http://qtum:test@localhost:3889');
+const rpc = new EthRPC('http://localhost:8545', '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1');
 ```
 
-This is a JSON-RPC client for direct access to the `qtumd` RPC API. It does not handle any ABI-encoding or decoding for you.
-
-You may included the RPC user & password in the URL if required. In the sample, the user is `qtum` and the password is `test`.
-
-Note: The `QtumRPC` class has a few undocumented public methods used internally by the `Contract` abstraction. Consider anything undocumented unsupported that could change in the future. Right now `rawCall` is the only public API.
+This is a JSON-RPC client for direct access to the Ethereum RPC API. It does not handle any ABI-encoding or decoding for you.
 
 Arg | Type
 --------- | -----------
 url | string
-    | URL of the qtumd RPC service
+  | URL of the RPC service
+sender | string
+  | *optional* Default ETH sender (default: `$first_account_of_eth_node`)
 
 ## rawCall
 
-> Call the `getinfo` RPC method to get basic information about the Qtum blockchain:
+Makes a JSON-RPC method call, and return the result. This method throws an error if the JSON API returns a non-200 HTTP result.
 
-```ts
-const info = await rpc.rawCall("getinfo")
-console.log(info)
-```
-
-> Output of `getinfo`:
-
-```js
-{ version: 141300,
-  protocolversion: 70016,
-  walletversion: 130000,
-  balance: 0,
-  stake: 0,
-  blocks: 85685,
-  timeoffset: 0,
-  connections: 8,
-  proxy: '',
-  difficulty:
-   { 'proof-of-work': 0.0000152587890625,
-     'proof-of-stake': 5207642.8878753 },
-  testnet: false,
-  moneysupply: 100322740,
-  keypoololdest: 1513325658,
-  keypoolsize: 100,
-  paytxfee: 0,
-  relayfee: 0.004,
-  errors: '' }
-```
-
-Makes a JSON-RPC 1.0 method call, and return the result. This method throws an error if the JSON API returns a non-200 HTTP result.
+Arg | Type
+--------- | -----------
+method | string
+  | RPC API method name
+params | any[]
+  | arguments for api
+opts | [IRPCCallOption](#irpccalloption)
+  | *optional* extra options
 
 > Using `try...catch` to handle error:
 
@@ -688,223 +530,78 @@ async function main() {
 }
 ```
 
-## All RPC Methods
+## getSender
 
-All RPC methods supported by qtumd.
+Arg | Type
+--------- | -----------
+@return | Promise\<string>
+  | default ETH sender
 
-```
-== Blockchain ==
-callcontract "address" "data" ( address )
-getaccountinfo "address"
-getbestblockhash
-getblock "blockhash" ( verbose )
-getblockchaininfo
-getblockcount
-getblockhash height
-getblockheader "hash" ( verbose )
-getchaintips
-getdifficulty
-getmempoolancestors txid (verbose)
-getmempooldescendants txid (verbose)
-getmempoolentry txid
-getmempoolinfo
-getrawmempool ( verbose )
-getstorage "address"
-gettransactionreceipt "hash"
-gettxout "txid" n ( include_mempool )
-gettxoutproof ["txid",...] ( blockhash )
-gettxoutsetinfo
-listcontracts (start maxDisplay)
-preciousblock "blockhash"
-pruneblockchain
-searchlogs <fromBlock> <toBlock> (address) (topics)
-verifychain ( checklevel nblocks )
-verifytxoutproof "proof"
-waitforlogs (fromBlock) (toBlock) (filter) (minconf)
+Get the default ETH sender, return the `sender` parameter if provided in constructor calling.
 
-== Control ==
-getinfo
-getmemoryinfo
-help ( "command" )
-stop
+## getGasPrice
 
-== Generating ==
-generate nblocks ( maxtries )
-generatetoaddress nblocks address (maxtries)
+Arg | Type
+--------- | -----------
+@return | Promise\<string>
+  | current network's gas price
 
-== Mining ==
-getblocktemplate ( TemplateRequest )
-getmininginfo
-getnetworkhashps ( nblocks height )
-getstakinginfo
-getsubsidy [nTarget]
-prioritisetransaction <txid> <priority delta> <fee delta>
-submitblock "hexdata" ( "jsonparametersobject" )
+Get current network's gas price.
 
-== Network ==
-addnode "node" "add|remove|onetry"
-clearbanned
-disconnectnode "node"
-getaddednodeinfo ( "node" )
-getconnectioncount
-getnettotals
-getnetworkinfo
-getpeerinfo
-listbanned
-ping
-setban "subnet" "add|remove" (bantime) (absolute)
-setnetworkactive true|false
+## getBlockNumber
 
-== Rawtransactions ==
-createrawtransaction [{"txid":"id","vout":n},...] {"address":amount,"data":"hex",...} ( locktime )
-decoderawtransaction "hexstring"
-decodescript "hexstring"
-fromhexaddress "hexaddress"
-fundrawtransaction "hexstring" ( options )
-gethexaddress "address"
-getrawtransaction "txid" ( verbose )
-sendrawtransaction "hexstring" ( allowhighfees )
-signrawtransaction "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] ["privatekey1",...] sighashtype )
+Arg | Type
+--------- | -----------
+@return | Promise\<number>
+  | latest block number
 
-== Util ==
-createmultisig nrequired ["key",...]
-estimatefee nblocks
-estimatepriority nblocks
-estimatesmartfee nblocks
-estimatesmartpriority nblocks
-signmessagewithprivkey "privkey" "message"
-validateaddress "address"
-verifymessage "address" "signature" "message"
+Get the latest block number.
 
-== Wallet ==
-abandontransaction "txid"
-addmultisigaddress nrequired ["key",...] ( "account" )
-addwitnessaddress "address"
-backupwallet "destination"
-bumpfee "txid" ( options )
-createcontract "bytecode" (gaslimit gasprice "senderaddress" broadcast)
-dumpprivkey "address"
-dumpwallet "filename"
-encryptwallet "passphrase"
-getaccount "address"
-getaccountaddress "account"
-getaddressesbyaccount "account"
-getbalance ( "account" minconf include_watchonly )
-getnewaddress ( "account" )
-getrawchangeaddress
-getreceivedbyaccount "account" ( minconf )
-getreceivedbyaddress "address" ( minconf )
-gettransaction "txid" ( include_watchonly ) (waitconf)
-getunconfirmedbalance
-getwalletinfo
-importaddress "address" ( "label" rescan p2sh )
-importmulti "requests" "options"
-importprivkey "qtum" ( "label" ) ( rescan )
-importprunedfunds
-importpubkey "pubkey" ( "label" rescan )
-importwallet "filename"
-keypoolrefill ( newsize )
-listaccounts ( minconf include_watchonly)
-listaddressgroupings
-listlockunspent
-listreceivedbyaccount ( minconf include_empty include_watchonly)
-listreceivedbyaddress ( minconf include_empty include_watchonly)
-listsinceblock ( "blockhash" target_confirmations include_watchonly)
-listtransactions ( "account" count skip include_watchonly)
-listunspent ( minconf maxconf  ["addresses",...] [include_unsafe] )
-lockunspent unlock ([{"txid":"txid","vout":n},...])
-move "fromaccount" "toaccount" amount ( minconf "comment" )
-removeprunedfunds "txid"
-reservebalance [<reserve> [amount]]
-sendfrom "fromaccount" "toaddress" amount ( minconf "comment" "comment_to" )
-sendmany "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] )
-sendmanywithdupes "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] )
-sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount )
-sendtocontract "contractaddress" "data" (amount gaslimit gasprice senderaddress broadcast)
-setaccount "address" "account"
-settxfee amount
-signmessage "address" "message"
-```
+## getAccounts
 
-## Example: getblockcount
+Arg | Type
+--------- | -----------
+@return | Promise\<string[]>
+  | accounts
 
-Returns the number of blocks in the longest blockchain.
+Get accounts.
 
-```ts
-const result = await rpc.rawCall("getblockcount")
-```
+## getNetId
 
-> Result
+Arg | Type
+--------- | -----------
+@return | Promise\<string>
+  | [net id](https://github.com/ethereum/wiki/wiki/JSON-RPC#net_version)
 
-```
-85687
-```
+Get the net id (aka net version).
 
-## Example: getnewaddress
+## getTransactionCount
 
-Returns a new Qtum address for receiving payments. This might be useful for exchanges that need to generate deposit addresses for users.
+Arg | Type
+--------- | -----------
+address | string
+  | address to query
+block | [typeBlockTags](#typeblocktags)
+  | block to query
+@return | Promise\<number>
+  | transaction count
 
-```ts
-const result = await rpc.rawCall("getnewaddress")
-```
+Get account's transaction count.
 
-> Result
+## getBalance
 
-```
-QSnrDTj4UNcRwKdhY8sUZEd74VzwqeAddW
-```
+Arg | Type
+--------- | -----------
+address | string
+  | address to query
+block | [typeBlockTags](#typeblocktags)
+  | block to query
+@return | Promise\<string>
+  | balance
 
-## Example: fromhexaddress
+Get ETH balance
 
-Converts a base58 pubkeyhash address to a hex address for use in smart contracts.
-
-```ts
-const result = await rpc.rawCall("gethexaddress", ["QSnrDTj4UNcRwKdhY8sUZEd74VzwqeAddW"])
-```
-
-> Result
-
-```
-43debdac95a0eaa4ff92d6b873944a4d92beae59
-```
-
-## Example: gettransactionreceipt
-
-Get the receipt of a confirmed transaction.
-
-```ts
-const txid = "62fecfd27d71ddb260ac48c73c8f0f87e96d0b3a598ed2c2251caa4e6f9a9d97"
-const result = await rpc.rawCall("gettransactionreceipt", [txid])
-```
-
-> Result
-
-```js
-[
-  {
-    "blockHash": "af37cb8d9905521542243005fadc9f18c1498c9823e35fa277ea1c37174c289a",
-    "blockNumber": 83981,
-    "transactionHash": "62fecfd27d71ddb260ac48c73c8f0f87e96d0b3a598ed2c2251caa4e6f9a9d97",
-    "transactionIndex": 28,
-    "from": "57142e3bcf000f28890b5d979afc7ea90204e1de",
-    "to": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-    "cumulativeGasUsed": 37029,
-    "gasUsed": 37029,
-    "contractAddress": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-    "log": [
-      {
-        "address": "49665919e437a4bedb92faa45ed33ebb5a33ee63",
-        "topics": [
-          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "00000000000000000000000057142e3bcf000f28890b5d979afc7ea90204e1de",
-          "000000000000000000000000c0ed80283c53c300c31c2bda6eca841e53cb6a21"
-        ],
-        "data": "000000000000000000000000000000000000000000000000000001ba5add5700"
-      }
-    ]
-  }
-]
-```
+## 
 
 # Types Lexicon
 
@@ -931,105 +628,30 @@ export interface IContractInfo {
 
 The minimal deployment information necessary to interact with a deployed contract.
 
-## IContractCallResult
+## IContractCallRequestOptions
 
-The result of calling a contract method, with decoded outputs and logs.
+Options for [Contract#call](#call)
 
 ```ts
-export interface IContractCallResult extends IRPCCallContractResult {
+/**
+ * Options for `call` to a contract method.
+ */
+export interface IContractCallRequestOptions {
   /**
-   * ABI-decoded outputs
+   * The quantum/ethereum address that will be used as sender.
    */
-  outputs: any[]
+  from?: string
 
-  /**
-   * ABI-decoded logs
-   */
-  logs: Array<IDecodedSolidityEvent | null>
-}
-
-export interface IRPCCallContractResult {
-  address: string
-  executionResult: IExecutionResult,
-  transactionReceipt: {
-    stateRoot: string,
-    gasUsed: string,
-    bloom: string,
-    log: any[],
-  }
-}
-
-export interface IExecutionResult {
-  gasUsed: number,
-  excepted: string,
-  newAddress: string,
-  output: string,
-  codeDeposit: number,
-  gasRefunded: number,
-  depositSize: number,
-  gasForDeposit: number,
+  gasLimit?: string | number
+  gasPrice?: string | number
+  value?: string | number
+  blockNumber?: typeBlockTags
 }
 ```
 
-> Example:
+### References
 
-```js
-{
-  "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "executionResult": {
-    "gasUsed": 39306,
-    "excepted": "None",
-    "newAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-    "output": "0000000000000000000000000000000000000000000000000000000000000001",
-    "codeDeposit": 0,
-    "gasRefunded": 0,
-    "depositSize": 0,
-    "gasForDeposit": 0
-  },
-  "transactionReceipt": {
-    "stateRoot": "9922edb770bd700a212427d3bc0764a9fed953a987952b2619b8a78dac7498aa",
-    "gasUsed": 39306,
-    "bloom": "00000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000020000000000008000000000000000000000000000000000000000000000000020000000020000000000800000000000000400000000010000000000000000000000000000000000000000000000000000000000000000000000000000080000000080000000000000000000000000000000000000000000000000000000002010000000000000000000000000000000200000000000000000020000000000000000000000000000000000000000000000000020000000000000000",
-    "log": [
-      {
-        "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-        "topics": [
-          "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-          "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-        ],
-        "data": "00000000000000000000000000000000000000000000000000000000000003e8"
-      },
-      {
-        "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-        "topics": [
-          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0000000000000000000000000000000000000000000000000000000000000000",
-          "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-        ],
-        "data": "00000000000000000000000000000000000000000000000000000000000003e8"
-      }
-    ]
-  },
-  "outputs": [
-    true
-  ],
-  "logs": [
-    {
-      "type": "Mint",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "amount": "3e8"
-    },
-    {
-      "type": "Transfer",
-      "from": "0000000000000000000000000000000000000000",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "value": "3e8"
-    }
-  ]
-}
-```
-
-The return type of `Contract#call`.
++ [typeBlockTags](#typeblocktags)
 
 ## IContractSendRequestOptions
 
@@ -1041,196 +663,173 @@ Options for [Contract#send](#send)
  */
 export interface IContractSendRequestOptions {
   /**
-   * The amount in QTUM to send. eg 0.1, default: 0
+   * The amount in Ether to send. eg 0.1, default: 0
    */
-  amount?: number | string
+  value?: number | string
 
   /**
-   * gasLimit, default: 200000, max: 40000000
+   * gasLimit, default: 200000
    */
-  gasLimit?: number
+  gasLimit?: number | string
 
   /**
-   * Qtum price per gas unit, default: 0.00000001, min:0.00000001
+   * gasPrice
    */
   gasPrice?: number | string
 
   /**
-   * The quantum address that will be used as sender.
+   * The ethereum address that will be used as sender.
    */
-  senderAddress?: string
+  from?: string
+
+  nonce?: number | string
 }
 ```
 
 ## IContractSendResult
 
 ```ts
-const tx = await contract.send(method, args)
-await tx.confirm(3, (updatedTx, receipt) => {
-  /// ...
-})
+export interface IContractSendResult extends IGetTransactionResult {
+  /**
+   * Name of contract method invoked.
+   */
+  method: string
+
+  /**
+   * Wait for transaction confirmations.
+   */
+  confirm: IContractSendConfirmFunction
+
+  txid: string
+}
 ```
 
 Return value of [Contract#send](#send).
 
-The `confirm` method is used to wait for transaction confirmations.
+### References
 
-The arguments for `confirm`:
++ [IGetTransactionResult](#igettransactionresult)
++ [IContractSendConfirmFunction](#icontractsendconfirmfunction)
+
+## IContractSendConfirmFunction
+
+Used to wait for transaction confirmations.
 
 Arg | Type
 --------- | -----------
 n | number
-  | *optional* Number of confirmations to wait for.
-callback | IContractSendConfirmationHandler
+  | *optional* Number of confirmations to wait for. (default: 3)
+callback | [IContractSendConfirmationHandler](#icontractsendconfirmationhandler)
   | *optional* The callback function invoked for each additional confirmation
+@return | [ITransactionReceipt](#itransactionreceipt)
+  | The transaction receipt after specific confirmations
 
+## IContractSendConfirmationHandler
 
-The callback values are:
+The callback for [`IContractSendConfirmFunction`](#icontractsendconfirmfuncction)
 
 Arg | Type
 --------- | -----------
-updatedTx | IRPCGetTransactionResult
+updatedTx | [IGetTransactionResult](#igettransactionresult)
   | Basic information about a transaction submitted to the network.
-receipt | IContractSendReceipt
+receipt | [ITransactionReceipt](#itransactionreceipt)
   | Additional information about a confirmed transaction.
 
-### References
-
-+ [IRPCGetTransactionResult](#irpcgettransactionresult)
-+ [IContractSendReceipt](#icontractsendreceipt)
-
-## IRPCGetTransactionResult
+## IGetTransactionResult
 
 ```ts
-export interface IRPCGetTransactionResult {
-  amount: number,
-  fee: number,
-  confirmations: number,
-  blockhash: string,
-  blockindex: number,
-  blocktime: number,
-  txid: string,
-  walletconflicts: any[],
-  time: number,
-  timereceived: number,
-  "bip125-replaceable": "no" | "yes" | "unknown",
-  details: any[]
-  hex: string,
+export interface IGetTransactionResult {
+  hash: string
+  nonce: string
+  from: string
+  to: string
+  value: string
+  gas: string
+  gasPrice: string
+  input: string
+  blockHash?: string
+  blockNumber?: string
+  transactionIndex?: string
 }
 ```
 
 Basic information about a transaction submitted to the network.
 
-## IContractSendReceipt
+## ITransactionReceipt
 
 The transaction receipt for [Contract#send](#send), with the event logs decoded.
 
 ```ts
-export interface IContractSendReceipt extends IRPCGetTransactionReceiptBase {
+export interface ITransactionReceipt extends IGetTransactionReceiptBase {
   /**
    * logs decoded using ABI
    */
-  logs: IDecodedLog[],
+  logs: IParsedLog[],
 
   /**
    * undecoded logs
    */
   rawlogs: ITransactionLog[],
 }
+```
 
+### References
+
+* [IGetTransactionReceiptBase](#igettransactionreceiptbase)
+* [IParsedLog](#iparsedlog)
+* [ITransactionLog](#itransactionlog)
+
+## IParsedLog
+
+```ts
 /**
  * A decoded Solidity event log
  */
-export interface IDecodedLog {
-  /**
-   * The event log's name
-   */
-  type: string
-
-  /**
-   * Arguments to event log as key-value map
-   */
+export interface IParsedLog {
+  _eventName: string
   [key: string]: any
 }
 ```
 
-> Example
+## ITransactionLog
 
-```json
-{
-  "blockHash": "3b53ad132c26f9c30e5be9f664573428dad8b52e167becea4428d6903cb32740",
-  "blockNumber": 13917,
-  "transactionHash": "79338589bb75e1865be889142890a4e25d3b9dbd454ce3f3c2614587c85e2ed3",
-  "transactionIndex": 1,
-  "from": "dcd32b87270aeb980333213da2549c9907e09e94",
-  "to": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "cumulativeGasUsed": 39306,
-  "gasUsed": 39306,
-  "contractAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "logs": [
-    {
-      "type": "Mint",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "amount": "7d0"
-    },
-    {
-      "type": "Transfer",
-      "from": "0000000000000000000000000000000000000000",
-      "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-      "value": "7d0"
-    }
-  ],
-  "rawlogs": [
-    {
-      "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "topics": [
-        "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-      ],
-      "data": "00000000000000000000000000000000000000000000000000000000000007d0"
-    },
-    {
-      "address": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-      "topics": [
-        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "0000000000000000000000000000000000000000000000000000000000000000",
-        "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-      ],
-      "data": "00000000000000000000000000000000000000000000000000000000000007d0"
-    }
-  ]
+```ts
+export interface ITransactionLog {
+  address: string
+  topics: string[]
+  data: string
+}
+```
+
+## IGetLogsRequest
+
+```ts
+export interface IGetLogsRequest {
+  /**
+   * The block number to start looking for logs.
+   */
+  fromBlock?: typeBlockTags
+
+  /**
+   * The block number to stop looking for logs.
+   */
+  toBlock?: typeBlockTags
+
+  /**
+   * contract address
+   */
+  address?: string[] | string
+
+  /**
+   * filter topics
+   */
+  topics?: Array<string | null>
 }
 ```
 
 ### References
 
-* [IRPCGetTransactionReceiptBase](#irpcgettransactionreceiptbase)
-
-## IRPCWaitForLogsRequest
-
-```ts
-export interface IRPCWaitForLogsRequest {
-  /**
-   * The block number to start looking for logs.
-   */
-  fromBlock?: number | "latest",
-
-  /**
-   * The block number to stop looking for logs. If null, will wait indefinitely into the future.
-   */
-  toBlock?: number | "latest",
-
-  /**
-   * Filter conditions for logs. Addresses and topics are specified as array of hexadecimal strings
-   */
-  filter?: ILogFilter,
-
-  /**
-   * Minimal number of confirmations before a log is returned
-   */
-  minconf?: number,
-}
-```
++ [typeBlockTags](#typeblocktags)
 
 ## IContractEventLogs
 
@@ -1271,123 +870,99 @@ export interface IContractLogEntry extends ILogEntry {
   /**
    * Solidity event, ABI decoded. Null if no ABI definition is found.
    */
-  event?: ISolidityEvent
+  event?: IParsedLog | null
 }
+```
 
+### References
+
++ [ILogEntry](#ilogentry)
++ [IParsedLog](#iparsedlog)
+
+## ILogEntry
+
+```ts
 /**
- * The raw log data returned by qtumd, not ABI decoded.
+ * The raw log data returned by rpc, not ABI decoded.
  */
-export interface ILogEntry extends IRPCGetTransactionReceiptBase {
+export interface ILogEntry {
   /**
-   * EVM log topics
+   *  `true` when the log was removed, due to a chain reorganization. `false` if
+   * its a valid log.
    */
-  topics: string[]
+  removed: boolean
 
   /**
-   * EVM log data, as hexadecimal string
+   * integer of the log index position in the block. `null` when its pending.
+   */
+  logIndex: string | null
+
+  /**
+   * integer of the transactions index position log was created from. `null`
+   * when its pending
+   */
+  transactionIndex: string | null
+
+  /**
+   * hash of the transactions this log was created from. `null` when its pending
+   */
+  transactionHash: string | null
+
+  /**
+   * hash of the block where this log was in. `null` when its pending.
+   */
+  blockHash: string | null
+
+  /**
+   * the block number where this log was in. `null` when its pending
+   */
+  blockNumber: string | null
+
+  /**
+   * address from which this log originated
+   */
+  address: string
+
+  /**
+   * contains one or more 32 Bytes non-indexed arguments of the log.
    */
   data: string
-}
 
-/**
- * Transaction receipt returned by qtumd
- */
-export interface IRPCGetTransactionReceiptBase {
+  /**
+   * Array of 0 to 4 32 Bytes data of indexed log arguments. (In solidity: The
+   * first topic is the hash of the signature of the event, except you declared
+   * the event with the `anonymous` specifier
+   */
+  topics: string[]
+}
+```
+
+## IGetTransactionReceiptBase
+
+Receipt for a transaction accepted by the network. It is returned by the `eth_getTransactionReceipt` RPC call.
+
+```ts
+export interface IGetTransactionReceiptBase {
   blockHash: string
-  blockNumber: number
+  blockNumber: string
 
   transactionHash: string
-  transactionIndex: number
+  transactionIndex: string
 
   from: string
   to: string
 
-  cumulativeGasUsed: number
-  gasUsed: number
+  cumulativeGasUsed: string
+  gasUsed: string
 
-  contractAddress: string
+  contractAddress: string | null
+  logsBloom: string
+  status?: TRANSACTION_STATUS // number in js, 0 is success, 1 is failed
 }
 ```
+### References
 
-> Example
-
-```js
-{
-  "blockHash": "369c6ded05c27ae7efc97964cce083b0ea9b8b950e67c51e52cb1bf898b9c415",
-  "blockNumber": 12184,
-  "transactionHash": "d1638a53f38fd68c5763e2eef9d86b9fc6ee7ea3f018dae7b1e385b4a9a78bc7",
-  "transactionIndex": 2,
-  "from": "dcd32b87270aeb980333213da2549c9907e09e94",
-  "to": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "cumulativeGasUsed": 39306,
-  "gasUsed": 39306,
-  "contractAddress": "a778c05f1d0f70f1133f4bbf78c1a9a7bf84aed3",
-  "topics": [
-    "0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
-    "000000000000000000000000dcd32b87270aeb980333213da2549c9907e09e94"
-  ],
-  "data": "00000000000000000000000000000000000000000000000000000000000003e8",
-  "event": {
-    "type": "Mint",
-    "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-    "amount": "3e8"
-  }
-}
-```
-
-## IDecodedSolidityEvent
-
-```ts
-/**
- * A decoded Solidity event log
- */
-export interface IDecodedSolidityEvent {
-  /**
-   * The event's name
-   */
-  type: string
-
-  /**
-   * Event parameters as a key-value map
-   */
-  [key: string]: any
-}
-```
-
-> Example
-
-```js
-{
-  "type": "Transfer",
-  "from": "0000000000000000000000000000000000000000",
-  "to": "dcd32b87270aeb980333213da2549c9907e09e94",
-  "value": "3e8"
-}
-```
-
-A decoded Solidity event log. The event parameters are stored a key-value map.
-
-## IRPCGetTransactionReceiptBase
-
-Receipt for a transaction accepted by the network. It is returned by the `gettransactionreceipt` RPC call.
-
-```ts
-export interface IRPCGetTransactionReceiptBase {
-  blockHash: string
-  blockNumber: number
-
-  transactionHash: string
-  transactionIndex: number
-
-  from: string
-  to: string
-
-  cumulativeGasUsed: number
-  gasUsed: number
-
-  contractAddress: string
-}
-```
++ [ITransactionReceipt](#itransactionreceipt)
 
 ## IContractsRepoData
 
@@ -1453,4 +1028,29 @@ export interface IABIMethod {
 
 This can be generated automatically using the [solar](https://github.com/qtumproject/solar) deployment tool.
 
-An example [solar.json](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli/blob/29fab6dfcca55013c7efa8ee5e91bbc8c40ca55a/solar.development.json.example).
+An example [solar.json](https://github.com/ceoimon/qtumbook-mytoken-qtumjs-eth-cli/blob/master/solar.development.json.example).
+
+## IRPCCallOption
+
+```ts
+export interface IRPCCallOption {
+  cancelToken?: CancelToken
+}
+```
+
+You can provider a [Axios `CancelToken`](https://github.com/axios/axios#cancellation) to cancel a http request.
+
+## TRANSACTION_STATUS
+
+```ts
+export enum TRANSACTION_STATUS {
+  FAILED,
+  SUCCESS
+}
+```
+
+## typeBlockTags
+
+```ts
+export type typeBlockTags = number | "latest" | "pending" | "earliest"
+```
